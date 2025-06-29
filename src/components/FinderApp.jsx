@@ -1,69 +1,72 @@
 import { useState } from "react";
 
-// Simulated file system (nested folders)
-const fileSystem = {
-  Documents: {},
-  Photos: {},
-  Music: {},
-  Projects: {
-    "App1.txt": "This is App1",
-    "Readme.md": "Hello World"
-  },
-  "Resume.pdf": "This is your resume",
-  "Notes.txt": "Some saved notes"
-};
+const FinderApp = ({ fileSystem, setFileSystem }) => {
+  const [currentFolder, setCurrentFolder] = useState("root");
+  const [history, setHistory] = useState(["root"]);
 
-const FinderApp = () => {
-  const [path, setPath] = useState([]); // ["Projects"]
-  
-  const getCurrentFolder = () => {
-    return path.reduce((acc, key) => acc[key], fileSystem);
+ const deleteItem = (item) => {
+  // Save the deleted item with original folder info
+  const updatedTrash = JSON.parse(localStorage.getItem("deletedItems") || "[]");
+  updatedTrash.push({ name: item.name, from: currentFolder });
+  localStorage.setItem("deletedItems", JSON.stringify(updatedTrash));
+
+  // Remove item from current folder
+  const updatedFS = {
+    ...fileSystem,
+    [currentFolder]: (fileSystem[currentFolder] || []).filter((i) => i.name !== item.name),
   };
 
-  const handleClick = (name) => {
-    const current = getCurrentFolder();
-    const selected = current[name];
-    
-    if (typeof selected === "object") {
-      setPath((prev) => [...prev, name]); // open folder
+  setFileSystem(updatedFS);
+};
+
+
+  const openItem = (item) => {
+    if (item.type === "folder") {
+      setCurrentFolder(item.name);
+      setHistory((prev) => [...prev, item.name]);
     } else {
-      alert(`📄 Opening ${name}:\n\n${selected}`); // file preview
+      alert(`Opening ${item.name}`);
     }
   };
 
   const goBack = () => {
-    setPath((prev) => prev.slice(0, -1));
+    if (history.length > 1) {
+      const newHistory = [...history];
+      newHistory.pop();
+      setCurrentFolder(newHistory[newHistory.length - 1]);
+      setHistory(newHistory);
+    }
   };
 
-  const current = getCurrentFolder();
+  
+  const items = fileSystem[currentFolder] || [];
 
   return (
-    <div className="bg-white h-full w-full p-4 text-black">
-      <div className="mb-2 flex justify-between items-center">
-        <div className="font-semibold">
-          /{path.length === 0 ? "Home" : path.join("/")}
-        </div>
-        {path.length > 0 && (
-          <button
-            onClick={goBack}
-            className="bg-gray-200 px-3 py-1 rounded text-sm hover:bg-gray-300"
-          >
-            ← Back
-          </button>
-        )}
+    <div className="bg-white h-full w-full p-4 text-gray-800">
+      <div className="flex justify-between mb-4">
+        <h2 className="font-bold text-lg">{currentFolder}</h2>
+        <button onClick={goBack} className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300">⬅ Back</button>
       </div>
 
       <div className="grid grid-cols-4 gap-4 text-center">
-        {Object.entries(current).map(([name, value], index) => (
+        {items.map((item, index) => (
           <div
             key={index}
-            onClick={() => handleClick(name)}
-            className="flex flex-col items-center justify-center hover:bg-gray-100 p-2 rounded cursor-pointer"
+            onDoubleClick={() => openItem(item)}
+            className="flex flex-col items-center justify-center hover:bg-gray-100 p-2 rounded cursor-pointer relative group"
           >
-            <div className="text-4xl">
-              {typeof value === "object" ? "📁" : "📄"}
-            </div>
-            <div className="text-xs mt-1 truncate">{name}</div>
+            <div className="text-4xl">{item.type === "folder" ? "📁" : "📄"}</div>
+            <div className="text-xs mt-1 truncate">{item.name}</div>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteItem(item);
+              }}
+              className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded px-1 opacity-0 group-hover:opacity-100 transition"
+            >
+              🗑
+            </button>
           </div>
         ))}
       </div>

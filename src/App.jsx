@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TopBar from "./components/TopBar";
 import Dock from "./components/Dock";
 import AppWindow from "./components/AppWindow";
@@ -8,12 +8,36 @@ import NotesApp from "./components/NotesApp";
 import TerminalApp from "./components/TerminalApp";
 import WallpaperPicker from "./components/WallpaperPicker";
 import ShutdownScreen from "./components/ShutdownScreen";
+import TrashApp from "./components/TrashApp";
+
+// ✅ Default filesystem structure
+const initialFileSystem = {
+  root: [
+    { name: "Documents", type: "folder" },
+    { name: "Photos", type: "folder" },
+    { name: "Resume.pdf", type: "file" },
+    { name: "Notes.txt", type: "file" },
+  ],
+  Documents: [
+    { name: "Project1", type: "folder" },
+    { name: "Report.docx", type: "file" },
+  ],
+  Photos: [
+    { name: "Vacation.jpg", type: "file" },
+    { name: "Family.png", type: "file" },
+  ],
+  Project1: [
+    { name: "code.js", type: "file" },
+    { name: "README.md", type: "file" },
+  ],
+};
 
 function App() {
   const [windows, setWindows] = useState([
     { key: "finder", open: true, zIndex: 1 },
     { key: "terminal", open: false, zIndex: 0 },
     { key: "notes", open: false, zIndex: 0 },
+    { key: "trash", open: false, zIndex: 0 },
   ]);
 
   const [wallpaper, setWallpaper] = useState(
@@ -21,6 +45,36 @@ function App() {
   );
   const [showPicker, setShowPicker] = useState(false);
   const [isShuttingDown, setIsShuttingDown] = useState(false);
+
+  // ✅ fileSystem state
+const [fileSystem, setFileSystem] = useState(() => {
+  const saved = localStorage.getItem("fileSystem");
+  return saved ? JSON.parse(saved) : {
+    root: [
+      { name: "Documents", type: "folder" },
+      { name: "Photos", type: "folder" },
+      { name: "Resume.pdf", type: "file" },
+      { name: "Notes.txt", type: "file" },
+    ],
+    Documents: [
+      { name: "Project1", type: "folder" },
+      { name: "Report.docx", type: "file" },
+    ],
+    Photos: [
+      { name: "Vacation.jpg", type: "file" },
+      { name: "Family.png", type: "file" },
+    ],
+    Project1: [
+      { name: "code.js", type: "file" },
+      { name: "README.md", type: "file" },
+    ],
+  };
+});
+
+
+useEffect(() => {
+  localStorage.setItem("fileSystem", JSON.stringify(fileSystem));
+}, [fileSystem]);
 
   // Bring clicked window to front
   const bringToFront = (key) => {
@@ -34,12 +88,18 @@ function App() {
 
   // Toggle open/close of apps
   const toggleApp = (key) => {
-    setWindows((prev) =>
-      prev.map((w) =>
-        w.key === key ? { ...w, open: !w.open } : w
-      )
-    );
-    bringToFront(key);
+    setWindows((prev) => {
+      const maxZ = Math.max(...prev.map((w) => w.zIndex));
+      return prev.map((w) => {
+        if (w.key === key) {
+          if (w.open) {
+            return { ...w, zIndex: maxZ + 1 };
+          }
+          return { ...w, open: true, zIndex: maxZ + 1 };
+        }
+        return w;
+      });
+    });
   };
 
   // Close app
@@ -78,10 +138,21 @@ function App() {
                 onFocus={() => bringToFront(win.key)}
                 zIndex={win.zIndex}
               >
-                {win.key === "finder" && <FinderApp />}
+                {win.key === "finder" && (
+                  <FinderApp
+                    fileSystem={fileSystem}
+                    setFileSystem={setFileSystem}
+                  />
+                )}
                 {win.key === "notes" && <NotesApp />}
                 {win.key === "terminal" && (
                   <TerminalApp onOpenApp={toggleApp} />
+                )}
+                {win.key === "trash" && (
+                  <TrashApp
+                    fileSystem={fileSystem}
+                    setFileSystem={setFileSystem}
+                  />
                 )}
               </AppWindow>
             )
@@ -99,16 +170,7 @@ function App() {
 
         {showPicker && <WallpaperPicker onSelect={handleWallpaperChange} />}
 
-        {/* Power Button */}
-        <button
-          onClick={() => {
-            setIsShuttingDown(true);
-            setTimeout(() => setIsShuttingDown(false), 2500);
-          }}
-          className="absolute top-2 right-4 bg-black/30 text-white px-3 py-1 text-xs rounded shadow backdrop-blur-sm hover:bg-black/50 transition z-50"
-        >
-          ⏻ Power
-        </button>
+       
 
         <Dock toggleApp={toggleApp} />
       </div>
