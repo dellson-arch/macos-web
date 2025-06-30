@@ -9,109 +9,23 @@ import TerminalApp from "./components/TerminalApp";
 import WallpaperPicker from "./components/WallpaperPicker";
 import ShutdownScreen from "./components/ShutdownScreen";
 import TrashApp from "./components/TrashApp";
-
-// ✅ Default filesystem structure
-const initialFileSystem = {
-  root: [
-    { name: "Documents", type: "folder" },
-    { name: "Photos", type: "folder" },
-    { name: "Resume.pdf", type: "file" },
-    { name: "Notes.txt", type: "file" },
-  ],
-  Documents: [
-    { name: "Project1", type: "folder" },
-    { name: "Report.docx", type: "file" },
-  ],
-  Photos: [
-    { name: "Vacation.jpg", type: "file" },
-    { name: "Family.png", type: "file" },
-  ],
-  Project1: [
-    { name: "code.js", type: "file" },
-    { name: "README.md", type: "file" },
-  ],
-};
+import { useApp } from "./context/AppContext";
 
 function App() {
-  const [windows, setWindows] = useState([
-    { key: "finder", open: true, zIndex: 1 },
-    { key: "terminal", open: false, zIndex: 0 },
-    { key: "notes", open: false, zIndex: 0 },
-    { key: "trash", open: false, zIndex: 0 },
-  ]);
+  const {
+    fileSystem,
+    setFileSystem,
+    windows,
+    toggleApp,
+    bringToFront,
+    closeApp,
+    wallpaper,
+    setWallpaper,
+  } = useApp();
 
-  const [wallpaper, setWallpaper] = useState(
-    localStorage.getItem("wallpaper") || "/wallpapers/mac.jpg"
-  );
   const [showPicker, setShowPicker] = useState(false);
   const [isShuttingDown, setIsShuttingDown] = useState(false);
 
-  // ✅ fileSystem state
-const [fileSystem, setFileSystem] = useState(() => {
-  const saved = localStorage.getItem("fileSystem");
-  return saved ? JSON.parse(saved) : {
-    root: [
-      { name: "Documents", type: "folder" },
-      { name: "Photos", type: "folder" },
-      { name: "Resume.pdf", type: "file" },
-      { name: "Notes.txt", type: "file" },
-    ],
-    Documents: [
-      { name: "Project1", type: "folder" },
-      { name: "Report.docx", type: "file" },
-    ],
-    Photos: [
-      { name: "Vacation.jpg", type: "file" },
-      { name: "Family.png", type: "file" },
-    ],
-    Project1: [
-      { name: "code.js", type: "file" },
-      { name: "README.md", type: "file" },
-    ],
-  };
-});
-
-
-useEffect(() => {
-  localStorage.setItem("fileSystem", JSON.stringify(fileSystem));
-}, [fileSystem]);
-
-  // Bring clicked window to front
-  const bringToFront = (key) => {
-    setWindows((prev) => {
-      const maxZ = Math.max(...prev.map((w) => w.zIndex));
-      return prev.map((w) =>
-        w.key === key ? { ...w, zIndex: maxZ + 1 } : w
-      );
-    });
-  };
-
-  // Toggle open/close of apps
-  const toggleApp = (key) => {
-    setWindows((prev) => {
-      const maxZ = Math.max(...prev.map((w) => w.zIndex));
-      return prev.map((w) => {
-        if (w.key === key) {
-          if (w.open) {
-            return { ...w, zIndex: maxZ + 1 };
-          }
-          return { ...w, open: true, zIndex: maxZ + 1 };
-        }
-        return w;
-      });
-    });
-  };
-
-  // Close app
-  const closeApp = (key) => {
-    setWindows((prev) =>
-      prev.map((w) =>
-        w.key === key ? { ...w, open: false } : w
-      )
-    );
-  };
-
-  // Change wallpaper
   const handleWallpaperChange = (src) => {
     setWallpaper(src);
     localStorage.setItem("wallpaper", src);
@@ -169,8 +83,6 @@ useEffect(() => {
         </button>
 
         {showPicker && <WallpaperPicker onSelect={handleWallpaperChange} />}
-
-       
 
         <Dock toggleApp={toggleApp} />
       </div>
