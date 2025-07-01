@@ -14,23 +14,20 @@ const Desktop = ({ toggleApp }) => {
     visible: false,
     x: 0,
     y: 0,
-    mode: "desktop", // or 'item'
+    mode: "desktop",
     itemIndex: null,
   });
   const [renamingIndex, setRenamingIndex] = useState(null);
 
-  // Load positions from localStorage once on mount
   useEffect(() => {
     const savedPositions = JSON.parse(localStorage.getItem("desktopPositions") || "{}");
     setPositions(savedPositions);
   }, []);
 
-  // Save positions to localStorage on every positions change
   useEffect(() => {
     localStorage.setItem("desktopPositions", JSON.stringify(positions));
   }, [positions]);
 
-  // Sync moved items (dragged from Finder to Desktop)
   useEffect(() => {
     const interval = setInterval(() => {
       const moved = JSON.parse(localStorage.getItem("finderMovedItems") || "[]");
@@ -65,14 +62,12 @@ const Desktop = ({ toggleApp }) => {
     if (!raw) return;
 
     const { name, type, from } = JSON.parse(raw);
-
     if (fileSystem.root?.some((item) => item.name === name)) return;
 
     const updatedFS = { ...fileSystem };
     updatedFS[from] = (updatedFS[from] || []).filter((item) => item.name !== name);
     if (!updatedFS.root) updatedFS.root = [];
     updatedFS.root = [...updatedFS.root, { name, type }];
-
     setFileSystem(updatedFS);
 
     setPositions((prev) => ({
@@ -127,8 +122,9 @@ const Desktop = ({ toggleApp }) => {
             visible: true,
             x: e.clientX,
             y: e.clientY,
-            mode: "desktop",
-            itemIndex: null,
+           
+            mode: "item",
+            itemIndex: index,
           });
         }
       }}
@@ -192,14 +188,12 @@ const Desktop = ({ toggleApp }) => {
                       i.name === item.name ? { ...i, name: newName } : i
                     );
                     setFileSystem(updatedFS);
-
                     setPositions((prev) => {
                       const updated = { ...prev };
                       updated[newName] = updated[item.name];
                       delete updated[item.name];
                       return updated;
                     });
-
                     setRenamingIndex(null);
                   }}
                   onKeyDown={(e) => e.key === "Enter" && e.target.blur()}
@@ -228,6 +222,12 @@ const Desktop = ({ toggleApp }) => {
             }
           }}
           onChangeWallpaper={() => alert("Wallpaper change not implemented")}
+          onShowInfo={() => {
+            const item = rootItems[contextMenu.itemIndex];
+            if (item) {
+              alert(`📁 Name: ${item.name}\n🗂️ Type: ${item.type}\n📍 Path: root/${item.name}`);
+            }
+          }}
         />
       )}
     </div>
@@ -235,3 +235,14 @@ const Desktop = ({ toggleApp }) => {
 };
 
 export default Desktop;
+
+
+
+
+
+
+
+
+
+
+

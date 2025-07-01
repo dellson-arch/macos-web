@@ -1,52 +1,53 @@
-import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 
 const TrashApp = () => {
-  const { fileSystem, setFileSystem } = useApp();
-
-  const [deletedItems, setDeletedItems] = useState(() =>
-    JSON.parse(localStorage.getItem("deletedItems") || "[]")
-  );
-
-  // Save to localStorage when items change
-  useEffect(() => {
-    localStorage.setItem("deletedItems", JSON.stringify(deletedItems));
-  }, [deletedItems]);
+  const {
+    trashItems,
+    setTrashItems,
+    fileSystem,
+    setFileSystem,
+  } = useApp();
 
   // Restore item from trash to original folder
   const restoreItem = (item) => {
-    const updatedTrash = deletedItems.filter((i) => i.name !== item.name);
-    setDeletedItems(updatedTrash);
+    // Remove from trash
+    const updatedTrash = trashItems.filter(
+      (i) => i.name !== item.name || i.from !== item.from
+    );
+    setTrashItems(updatedTrash);
 
-    const type = item.name.includes(".") ? "file" : "folder";
+    const updatedFS = { ...fileSystem };
     const targetFolder = item.from || "root";
 
-    const updatedFS = {
-      ...fileSystem,
-      [targetFolder]: [...(fileSystem[targetFolder] || []), { name: item.name, type }],
-    };
+    if (!updatedFS[targetFolder]) {
+      updatedFS[targetFolder] = [];
+    }
+
+    updatedFS[targetFolder].push({
+      name: item.name,
+      type: item.type,
+    });
 
     setFileSystem(updatedFS);
-
-    // Notify other components
-    window.dispatchEvent(new Event("storage"));
   };
 
   // Permanently delete item from trash
   const deleteForever = (item) => {
-    const updated = deletedItems.filter((i) => i.name !== item.name);
-    setDeletedItems(updated);
+    const updated = trashItems.filter(
+      (i) => i.name !== item.name || i.from !== item.from
+    );
+    setTrashItems(updated);
   };
 
   return (
-    <div className="p-4 text-white h-full overflow-auto">
+    <div className="p-4 text-white h-full overflow-auto bg-black/80">
       <h2 className="text-xl font-bold mb-2">🗑 Trash</h2>
 
-      {deletedItems.length === 0 ? (
+      {trashItems.length === 0 ? (
         <p className="text-gray-400">Trash is empty.</p>
       ) : (
         <ul className="list-disc pl-6 space-y-2">
-          {deletedItems.map((item, idx) => (
+          {trashItems.map((item, idx) => (
             <li key={idx} className="text-sm flex items-center justify-between">
               <div>
                 {item.name}

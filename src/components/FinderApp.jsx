@@ -6,6 +6,8 @@ const FinderApp = () => {
     fileSystem,
     setFileSystem,
     setActiveFolder,
+    trashItems,
+    setTrashItems,
   } = useApp();
 
   const [path, setPath] = useState(["root"]);
@@ -13,20 +15,26 @@ const FinderApp = () => {
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, index: null });
 
   const currentFolder = path[path.length - 1];
-  const items = fileSystem[currentFolder] || [];
+
+  const allItems = fileSystem[currentFolder] || [];
+  const items = allItems.filter(
+    (item) => !trashItems.find((t) => t.name === item.name && t.from === currentFolder)
+  );
 
   const deleteItem = (item) => {
-    const updatedTrash = JSON.parse(localStorage.getItem("deletedItems") || "[]");
-    updatedTrash.push({ name: item.name, from: currentFolder });
-    localStorage.setItem("deletedItems", JSON.stringify(updatedTrash));
-
     const updatedFS = {
       ...fileSystem,
-      [currentFolder]: items.filter((i) => i.name !== item.name),
+      [currentFolder]: allItems.filter((i) => i.name !== item.name),
     };
-
     setFileSystem(updatedFS);
-    window.dispatchEvent(new Event("storage"));
+
+    setTrashItems((prev) => [
+      ...prev,
+      {
+        ...item,
+        from: currentFolder,
+      },
+    ]);
   };
 
   const openItem = (item) => {
@@ -54,62 +62,37 @@ const FinderApp = () => {
     setRenamingIndex(null);
   };
 
-const handleDrop = (e) => {
-  e.preventDefault();
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const raw = e.dataTransfer.getData("application/finder-item");
+    if (!raw) return;
 
-  console.log("🔥 Drop Triggered");
+    const { name, type, from } = JSON.parse(raw);
+    if (from === currentFolder) return;
 
-  const raw = e.dataTransfer.getData("application/finder-item");
-  if (!raw) return;
+    const updatedFS = { ...fileSystem };
 
-  const { name, type, from } = JSON.parse(raw);
-  console.log("📦 Dropped Data:", { name, type, from });
+    updatedFS[from] = (updatedFS[from] || []).filter((item) => item.name !== name);
+    updatedFS[currentFolder] = [...(updatedFS[currentFolder] || []), { name, type }];
 
-  // Skip if dropped into same folder
-  if (from === currentFolder) return;
-
-  const updatedFS = { ...fileSystem };
-
-  // Remove from old folder
-  updatedFS[from] = (updatedFS[from] || []).filter((item) => item.name !== name);
-
-  // Add to current folder
-  updatedFS[currentFolder] = [...(updatedFS[currentFolder] || []), { name, type }];
-
-  setFileSystem(updatedFS);
-
-  // Mark as moved (for syncing Desktop)
-  const moved = JSON.parse(localStorage.getItem("finderMovedItems") || "[]");
-  moved.push({ name, from });
-  localStorage.setItem("finderMovedItems", JSON.stringify(moved));
-
-  window.dispatchEvent(new Event("storage"));
-};
-
+    setFileSystem(updatedFS);
+  };
 
   const handleDragStart = (e, item) => {
     const data = JSON.stringify({ name: item.name, type: item.type, from: currentFolder });
     e.dataTransfer.setData("application/finder-item", data);
   };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const moved = JSON.parse(localStorage.getItem("finderMovedItems") || "[]");
-      if (moved.length) {
-        setFileSystem((prev) => ({ ...prev }));
-        localStorage.setItem("finderMovedItems", "[]");
-      }
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, [fileSystem]);
+  const showInfo = (item) => {
+    alert(`📄 Info\n\nName: ${item.name}\nType: ${item.type}\nLocation: ${currentFolder}`);
+  };
 
   return (
     <div
       className="bg-white h-full w-full p-4 text-gray-800 relative"
- onClick={() => setContextMenu({ visible: false, x: 0, y: 0, index: null })}
-  onDragOver={(e) => e.preventDefault()}
-  onDrop={handleDrop}
+      onClick={() => setContextMenu({ visible: false, x: 0, y: 0, index: null })}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={handleDrop}
     >
       <div className="flex justify-between items-center mb-4">
         <div>
@@ -172,11 +155,21 @@ const handleDrop = (e) => {
             <li
               className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
               onClick={() => {
+                const item = items[contextMenu.index];
+                showInfo(item);
+                setContextMenu({ ...contextMenu, visible: false });
+              }}
+            >
+              ℹ️ Show Info
+            </li>
+            <li
+              className="px-4 py-2 hover:bg-gray-200 cursor-pointer text-red-600"
+              onClick={() => {
                 deleteItem(items[contextMenu.index]);
                 setContextMenu({ ...contextMenu, visible: false });
               }}
             >
-              🗑 Delete
+              🗑 Move to Trash
             </li>
           </ul>
         </div>

@@ -1,65 +1,75 @@
-// components/ContextMenu.jsx
 const ContextMenu = ({
   x,
   y,
   mode,
   onClose,
   onNewFolder,
-  onChangeWallpaper,
   onRename,
   onDelete,
+  onChangeWallpaper,
+  onShowInfo, // ✅ Accept this
 }) => {
   return (
     <div
-      className="absolute z-[9999] bg-white text-sm rounded-md shadow-md overflow-hidden"
+      className="absolute bg-white text-sm border rounded shadow-lg z-50"
       style={{ top: y, left: x }}
-      onMouseLeave={onClose}
     >
-      {mode === "desktop" && (
-        <>
-          <div
-            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-            onClick={() => {
-              onNewFolder();
-              onClose();
-            }}
-          >
-            ➕ New Folder
-          </div>
-          <div
-            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-            onClick={() => {
-              onChangeWallpaper();
-              onClose();
-            }}
-          >
-            🎨 Change Wallpaper
-          </div>
-        </>
-      )}
+      <ul>
+        {mode === "desktop" && (
+          <>
+            <li
+              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+              onClick={() => {
+                onNewFolder();
+                onClose();
+              }}
+            >
+              📁 New Folder
+            </li>
+            <li
+              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+              onClick={() => {
+                onChangeWallpaper();
+                onClose();
+              }}
+            >
+              🖼 Change Wallpaper
+            </li>
+          </>
+        )}
 
-      {mode === "item" && (
-        <>
-          <div
-            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-            onClick={() => {
-              onRename();
-              onClose();
-            }}
-          >
-            ✏️ Rename
-          </div>
-          <div
-            className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-red-600"
-            onClick={() => {
-              onDelete();
-              onClose();
-            }}
-          >
-            🗑️ Delete
-          </div>
-        </>
-      )}
+        {mode === "item" && (
+          <>
+            <li
+              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+              onClick={() => {
+                onRename();
+                onClose();
+              }}
+            >
+              ✏️ Rename
+            </li>
+            <li
+              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+              onClick={() => {
+                onShowInfo(); // ✅ now properly called
+                onClose();
+              }}
+            >
+              ℹ️ Show Info
+            </li>
+            <li
+              className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-red-600"
+              onClick={() => {
+                onDelete();
+                onClose();
+              }}
+            >
+              🗑 Move to Trash
+            </li>
+          </>
+        )}
+      </ul>
     </div>
   );
 };
