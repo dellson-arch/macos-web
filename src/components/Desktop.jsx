@@ -7,7 +7,6 @@ const Desktop = ({ toggleApp }) => {
   const { fileSystem, setFileSystem, setActiveFolder } = useApp();
 
   const rootItems = fileSystem?.root || [];
-
   const [positions, setPositions] = useState({});
   const [selected, setSelected] = useState(null);
   const [contextMenu, setContextMenu] = useState({
@@ -56,6 +55,16 @@ const Desktop = ({ toggleApp }) => {
     setRenamingIndex(updatedFS.root.length - 1);
   };
 
+  const handleNewApp = () => {
+    const safariExists = fileSystem?.root?.some((item) => item.name === "Safari");
+    if (!safariExists) {
+      const updatedFS = { ...fileSystem };
+      updatedFS.root = [...(updatedFS.root || []), { name: "Safari", type: "app" }];
+      setFileSystem(updatedFS);
+      setPositions((prev) => ({ ...prev, Safari: { x: 100, y: 100 } }));
+    }
+  };
+
   const handleDrop = (e) => {
     e.preventDefault();
     const raw = e.dataTransfer.getData("application/finder-item");
@@ -66,8 +75,7 @@ const Desktop = ({ toggleApp }) => {
 
     const updatedFS = { ...fileSystem };
     updatedFS[from] = (updatedFS[from] || []).filter((item) => item.name !== name);
-    if (!updatedFS.root) updatedFS.root = [];
-    updatedFS.root = [...updatedFS.root, { name, type }];
+    updatedFS.root = [...(updatedFS.root || []), { name, type }];
     setFileSystem(updatedFS);
 
     setPositions((prev) => ({
@@ -100,7 +108,9 @@ const Desktop = ({ toggleApp }) => {
   };
 
   const handleDoubleClick = (item) => {
-    if (item.type === "folder") {
+    if (item.name === "Safari") {
+      toggleApp("safari");
+    } else if (item.type === "folder") {
       setActiveFolder(item.name);
       toggleApp("finder");
     } else if (item.name === "Notes.txt") {
@@ -122,9 +132,8 @@ const Desktop = ({ toggleApp }) => {
             visible: true,
             x: e.clientX,
             y: e.clientY,
-           
-            mode: "item",
-            itemIndex: index,
+            mode: "desktop",
+            itemIndex: null,
           });
         }
       }}
@@ -135,7 +144,14 @@ const Desktop = ({ toggleApp }) => {
     >
       {rootItems.map((item, index) => {
         const pos = positions[item.name] || { x: 50 + index * 120, y: 50 };
-        const icon = item.type === "folder" ? "📁" : item.name === "Trash" ? "🗑️" : "📄";
+        const icon =
+          item.name === "Safari"
+            ? "🌐"
+            : item.type === "folder"
+            ? "📁"
+            : item.name === "Trash"
+            ? "🗑️"
+            : "📄";
 
         return (
           <Rnd
@@ -143,7 +159,10 @@ const Desktop = ({ toggleApp }) => {
             size={{ width: 80, height: 80 }}
             position={pos}
             onDragStop={(e, d) => {
-              setPositions((prev) => ({ ...prev, [item.name]: { x: d.x, y: d.y } }));
+              setPositions((prev) => ({
+                ...prev,
+                [item.name]: { x: d.x, y: d.y },
+              }));
             }}
             bounds="parent"
             enableResizing={false}
@@ -200,7 +219,9 @@ const Desktop = ({ toggleApp }) => {
                   className="text-white text-xs text-center mt-1 bg-black/20 outline-none"
                 />
               ) : (
-                <div className="text-white text-xs mt-1 truncate w-20 select-text">{item.name}</div>
+                <div className="text-white text-xs mt-1 truncate w-20 select-text">
+                  {item.name}
+                </div>
               )}
             </div>
           </Rnd>
@@ -228,6 +249,7 @@ const Desktop = ({ toggleApp }) => {
               alert(`📁 Name: ${item.name}\n🗂️ Type: ${item.type}\n📍 Path: root/${item.name}`);
             }
           }}
+          onNewApp={handleNewApp}
         />
       )}
     </div>
@@ -235,14 +257,3 @@ const Desktop = ({ toggleApp }) => {
 };
 
 export default Desktop;
-
-
-
-
-
-
-
-
-
-
-

@@ -1,3 +1,5 @@
+import React from "react";
+
 const ContextMenu = ({
   x,
   y,
@@ -7,7 +9,8 @@ const ContextMenu = ({
   onRename,
   onDelete,
   onChangeWallpaper,
-  onShowInfo, // ✅ Accept this
+  onShowInfo,
+  onNewApp, // ✅ Accept as prop
 }) => {
   return (
     <div
@@ -25,6 +28,15 @@ const ContextMenu = ({
               }}
             >
               📁 New Folder
+            </li>
+            <li
+              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+              onClick={() => {
+                onNewApp(); // ✅ Add Safari from desktop right-click
+                onClose();
+              }}
+            >
+              🧭 New Safari
             </li>
             <li
               className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
@@ -52,7 +64,7 @@ const ContextMenu = ({
             <li
               className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
               onClick={() => {
-                onShowInfo(); // ✅ now properly called
+                onShowInfo();
                 onClose();
               }}
             >

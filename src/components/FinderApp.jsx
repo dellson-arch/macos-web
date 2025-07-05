@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 
-const FinderApp = () => {
+const FinderApp = ({ toggleApp }) => {
   const {
     fileSystem,
     setFileSystem,
@@ -12,11 +12,16 @@ const FinderApp = () => {
 
   const [path, setPath] = useState(["root"]);
   const [renamingIndex, setRenamingIndex] = useState(null);
-  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, index: null });
+  const [contextMenu, setContextMenu] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+    index: null,
+  });
 
   const currentFolder = path[path.length - 1];
-
   const allItems = fileSystem[currentFolder] || [];
+
   const items = allItems.filter(
     (item) => !trashItems.find((t) => t.name === item.name && t.from === currentFolder)
   );
@@ -28,21 +33,21 @@ const FinderApp = () => {
     };
     setFileSystem(updatedFS);
 
-    setTrashItems((prev) => [
-      ...prev,
-      {
-        ...item,
-        from: currentFolder,
-      },
-    ]);
+    setTrashItems((prev) => [...prev, { ...item, from: currentFolder }]);
   };
 
   const openItem = (item) => {
     if (item.type === "folder") {
       setPath([...path, item.name]);
       setActiveFolder(item.name);
+    } else if (item.name === "Notes.txt") {
+      toggleApp("notes");
+    } else if (item.name === "Safari") {
+      toggleApp("safari");
+    } else if (item.name === "Trash") {
+      toggleApp("trash");
     } else {
-      alert(`Opening ${item.name}`);
+      alert(`📄 Opening ${item.name}`);
     }
   };
 
@@ -56,8 +61,11 @@ const FinderApp = () => {
   };
 
   const handleRename = (index, newName) => {
+    const trimmedName = newName.trim();
+    if (!trimmedName) return;
+
     const updatedFS = { ...fileSystem };
-    updatedFS[currentFolder][index].name = newName;
+    updatedFS[currentFolder][index].name = trimmedName;
     setFileSystem(updatedFS);
     setRenamingIndex(null);
   };
@@ -68,18 +76,22 @@ const FinderApp = () => {
     if (!raw) return;
 
     const { name, type, from } = JSON.parse(raw);
+
     if (from === currentFolder) return;
+    if (fileSystem[currentFolder]?.some((item) => item.name === name)) return;
 
     const updatedFS = { ...fileSystem };
-
     updatedFS[from] = (updatedFS[from] || []).filter((item) => item.name !== name);
     updatedFS[currentFolder] = [...(updatedFS[currentFolder] || []), { name, type }];
-
     setFileSystem(updatedFS);
   };
 
   const handleDragStart = (e, item) => {
-    const data = JSON.stringify({ name: item.name, type: item.type, from: currentFolder });
+    const data = JSON.stringify({
+      name: item.name,
+      type: item.type,
+      from: currentFolder,
+    });
     e.dataTransfer.setData("application/finder-item", data);
   };
 
@@ -109,32 +121,48 @@ const FinderApp = () => {
       </div>
 
       <div className="grid grid-cols-4 gap-4 text-center">
-        {items.map((item, index) => (
-          <div
-            key={index}
-            draggable
-            onDragStart={(e) => handleDragStart(e, item)}
-            onDoubleClick={() => openItem(item)}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setContextMenu({ visible: true, x: e.clientX, y: e.clientY, index });
-            }}
-            className="flex flex-col items-center justify-center hover:bg-gray-100 p-2 rounded cursor-pointer"
-          >
-            <div className="text-4xl">{item.type === "folder" ? "📁" : "📄"}</div>
-            {renamingIndex === index ? (
-              <input
-                autoFocus
-                defaultValue={item.name}
-                onBlur={(e) => handleRename(index, e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleRename(index, e.target.value)}
-                className="text-xs mt-1 text-center border border-gray-300 rounded px-1 w-full"
-              />
-            ) : (
-              <div className="text-xs mt-1 truncate">{item.name}</div>
-            )}
-          </div>
-        ))}
+        {items.map((item, index) => {
+          const icon =
+            item.name === "Safari"
+              ? "🌐"
+              : item.type === "folder"
+              ? "📁"
+              : item.name.endsWith(".txt")
+              ? "📝"
+              : "📄";
+
+          return (
+            <div
+              key={index}
+              draggable
+              onDragStart={(e) => handleDragStart(e, item)}
+              onDoubleClick={() => openItem(item)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setContextMenu({
+                  visible: true,
+                  x: e.clientX,
+                  y: e.clientY,
+                  index,
+                });
+              }}
+              className="flex flex-col items-center justify-center hover:bg-gray-100 p-2 rounded cursor-pointer"
+            >
+              <div className="text-4xl">{icon}</div>
+              {renamingIndex === index ? (
+                <input
+                  autoFocus
+                  defaultValue={item.name}
+                  onBlur={(e) => handleRename(index, e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleRename(index, e.target.value)}
+                  className="text-xs mt-1 text-center border border-gray-300 rounded px-1 w-full"
+                />
+              ) : (
+                <div className="text-xs mt-1 truncate w-full">{item.name}</div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {contextMenu.visible && (

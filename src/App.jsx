@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import TopBar from "./components/TopBar";
 import Dock from "./components/Dock";
 import AppWindow from "./components/AppWindow";
@@ -9,6 +9,7 @@ import TerminalApp from "./components/TerminalApp";
 import WallpaperPicker from "./components/WallpaperPicker";
 import ShutdownScreen from "./components/ShutdownScreen";
 import TrashApp from "./components/TrashApp";
+import Safari from "./components/Safari";
 import { useApp } from "./context/AppContext";
 
 function App() {
@@ -41,7 +42,6 @@ function App() {
       >
         <TopBar />
 
-        {/* App Windows */}
         {windows.map(
           (win) =>
             win.open && (
@@ -53,14 +53,14 @@ function App() {
                 zIndex={win.zIndex}
               >
                 {win.key === "finder" && (
-                  <FinderApp
-                    fileSystem={fileSystem}
-                    setFileSystem={setFileSystem}
-                  />
+                  <FinderApp toggleApp={toggleApp} />
                 )}
                 {win.key === "notes" && <NotesApp />}
                 {win.key === "terminal" && (
                   <TerminalApp onOpenApp={toggleApp} />
+                )}
+                {win.key === "safari" && (
+                  <Safari onClose={() => closeApp("safari")} />
                 )}
                 {win.key === "trash" && (
                   <TrashApp
@@ -74,7 +74,6 @@ function App() {
 
         <Desktop toggleApp={toggleApp} />
 
-        {/* Wallpaper Button */}
         <button
           onClick={() => setShowPicker(!showPicker)}
           className="absolute bottom-24 right-6 bg-black/30 text-white px-4 py-2 rounded shadow z-50 backdrop-blur-sm hover:bg-black/50 transition"

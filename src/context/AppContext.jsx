@@ -10,6 +10,7 @@ const initialFileSystem = {
     { name: "Photos", type: "folder", path: "root/Photos" },
     { name: "Resume.pdf", type: "file", path: "root/Resume.pdf" },
     { name: "Notes.txt", type: "file", path: "root/Notes.txt" },
+    { name: "Safari", type: "file" }, // Safari icon visible
   ],
   Documents: [
     { name: "Project1", type: "folder", path: "Documents/Project1" },
@@ -26,55 +27,52 @@ const initialFileSystem = {
 };
 
 export const AppProvider = ({ children }) => {
-  // 📁 File System
   const [fileSystem, setFileSystem] = useState(() => {
     const saved = localStorage.getItem("fileSystem");
     return saved ? JSON.parse(saved) : initialFileSystem;
   });
 
-  // 🗑 Trash Items (Global)
   const [trashItems, setTrashItems] = useState(() => {
     const saved = localStorage.getItem("trashItems");
     return saved ? JSON.parse(saved) : [];
   });
 
-  // 🖼 Wallpaper
   const [wallpaper, setWallpaper] = useState(
     localStorage.getItem("wallpaper") || "/wallpapers/mac.jpg"
   );
 
-  // 🪟 App Window State
   const [windows, setWindows] = useState([
     { key: "finder", open: true, zIndex: 1 },
     { key: "terminal", open: false, zIndex: 0 },
     { key: "notes", open: false, zIndex: 0 },
     { key: "trash", open: false, zIndex: 0 },
+    { key: "safari", open: false, zIndex: 0 }, // ✅ Added Safari
   ]);
 
-  // 📂 Currently Opened Folder
   const [activeFolder, setActiveFolder] = useState("root");
 
-  // 🔁 Persist fileSystem on change
   useEffect(() => {
     localStorage.setItem("fileSystem", JSON.stringify(fileSystem));
   }, [fileSystem]);
 
-  // 🔁 Persist trashItems on change
   useEffect(() => {
     localStorage.setItem("trashItems", JSON.stringify(trashItems));
   }, [trashItems]);
 
-  // 📤 Open/Focus Apps
   const toggleApp = (key) => {
     setWindows((prev) => {
       const maxZ = Math.max(...prev.map((w) => w.zIndex));
-      return prev.map((w) =>
-        w.key === key ? { ...w, open: true, zIndex: maxZ + 1 } : w
-      );
+      const exists = prev.some((w) => w.key === key);
+      if (exists) {
+        return prev.map((w) =>
+          w.key === key ? { ...w, open: true, zIndex: maxZ + 1 } : w
+        );
+      } else {
+        return [...prev, { key, open: true, zIndex: maxZ + 1 }];
+      }
     });
   };
 
-  // 👆 Bring App to Front
   const bringToFront = (key) => {
     const maxZ = Math.max(...windows.map((w) => w.zIndex));
     setWindows((prev) =>
@@ -82,7 +80,6 @@ export const AppProvider = ({ children }) => {
     );
   };
 
-  // ❌ Close App Window
   const closeApp = (key) => {
     setWindows((prev) =>
       prev.map((w) => (w.key === key ? { ...w, open: false } : w))
